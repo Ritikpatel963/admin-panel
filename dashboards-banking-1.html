@@ -19,301 +19,767 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['getDetails'])) {
 }
 ?>
 
+<?php
+    $id = $types = $product = $purity = $hsn = $purchase_date = '';
+
+    ob_start();
+    include_once('../connect.php');
+
+    $focus1 = 'autofocus';
+    $focus2 = '';
+    $advance = '';
+
+    $products = $db->query("SELECT * FROM `stock` ORDER BY id DESC");
+    ?>
+
+    <?php
+    if (isset($_GET['cc'])) {
+        $cc = $_GET['cc'];
+    }
+
+    ?>
+
+    <?php
+    //FOR NEW sales BILL
+    if (!isset($_POST['bill']) && !isset($_GET['bill'])) {
+        $invoice_sql = "SELECT * FROM sales ORDER BY bill_no DESC LIMIT 1";
+        $invoice_run = mysqli_query($db, $invoice_sql);
+        $invoice_row = mysqli_num_rows($invoice_run);
+
+        if ($invoice_row == 1) {
+            $fetch_row = mysqli_fetch_array($invoice_run);
+            $bill = $fetch_row['bill_no'];
+            $bill = round($bill + 1);
+        } else if ($invoice_row == 0) {
+            $bill = 1;
+        }
+
+        // INITIATE VARIABLES
+        $remark = '';
+        $name = '';
+        $address = '';
+        $mobile = '';
+        $truck_no = '';
+        $gstper = 3;
+        $m_total = '';
+        $m_balance = '';
+        $total_amt = '';
+        $pan = '';
+        $amt = '';
+        $date = date('Y-m-d');
+        $focus1 = 'autofocus';
+        $focus2 = '';
+        $discount = '';
+        $paid = '';
+        $balance = '';
+        $final = '';
+        $cash = $credit_card = $chq_amount = 0;
+        $cheque_no = '';
+        $orn = '';
+        $balance_amount = '';
+        $orn_description = $area = "";
+        $g_total = 0;
+    }
+
+    if (isset($_POST['bill'])) {
+        $bill = $_POST['bill'];
+    }
+
+    if (isset($_GET['bill'])) {
+        $bill = $_GET['bill'];
+    }
+
+
+    if (isset($_POST['bill']) || isset($_GET['bill'])) {
+        $sql = "SELECT * FROM sales WHERE bill_no = '$bill' and description!='Payment' LIMIT 1";
+        $sql_run = mysqli_query($db, $sql);
+        $row = mysqli_fetch_array($sql_run);
+
+        $m_total = $row['total_amt'];
+        $date = $row['date'];
+        $name = $row['name'];
+        $party = $name;
+        $address = $row['address'];
+        $area = $row['area'];
+        $mobile = $row['mobile'];
+        $final = $row['final'];
+        $paid = $row['paid'];
+        $balance = $row['balance'];
+        $discount = $row['discount'];
+        $pan = $row['pan'];
+        $remark = $row['remark'];
+        $focus2 = 'autofocus';
+        $focus1 = '';
+        $orn = $row['orn'];
+        $balance_amount = $row['balance_amount'];
+        $orn_description = $row['orn_description'];
+    }
+
+
+    if (isset($_POST['check'])) {
+        $name = $_POST['name'];
+        $sql = mysqli_query($db, "SELECT * FROM sales where name = '$name' and description!='Payment' limit 1");
+        $sqlrow = mysqli_fetch_array($sql);
+        $address = $sqlrow['address'];
+        $area = $sqlrow['area'];
+        $pan = $sqlrow['pan'];
+        $mobile = $sqlrow['mobile'];
+        $date = date('Y-m-d');
+    }
+    ?>
+
 <?php include_once('../connect.php'); ?>
-<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-
-<head>
-  <!-- Meta tags  -->
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
-  <link rel="stylesheet" href="bootstrap-5/css/bootstrap.min.css">
-  <title>Lineone - Banking v1 Dashboard</title>
-  <link rel="icon" type="image/png" href="images/favicon.png" />
-  <!-- CSS Assets -->
-  <link rel="stylesheet" href="css/app.css" />
-  <!-- Javascript Assets -->
-  <script src="js/app.js" defer></script>
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com/" />
-  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet" />
-  <script>
-    /**
-     * THIS SCRIPT REQUIRED FOR PREVENT FLICKERING IN SOME BROWSERS
-     */
-    localStorage.getItem("_x_darkMode_on") === "true" &&
-      document.documentElement.classList.add("dark");
-  </script>
-</head>
-
-<body x-data class="is-header-blur" x-bind="$store.global.documentBody">
-  <!-- Page Wrapper -->
-  <div id="root" class="min-h-100vh flex grow bg-slate-50 dark:bg-navy-900" x-cloak>
-    <!-- Sidebar -->
-    <div class="sidebar print:hidden">
-      <!-- Main Sidebar -->
-      <div class="main-sidebar">
-        <div class="flex h-full w-full flex-col items-center border-r border-slate-150 bg-white dark:border-navy-700 dark:bg-navy-800">
-          <!-- Application Logo -->
-          <div class="flex pt-4">
-            <a href="index.html">
-              <img class="size-11 transition-transform duration-500 ease-in-out hover:rotate-[360deg]" src="images/app-logo.svg" alt="logo" />
-            </a>
-          </div>
-          <!-- Main Sections Links -->
-          <div class="is-scrollbar-hidden flex grow flex-col space-y-4 overflow-y-auto pt-6">
-            <!-- Dashobards -->
-            <a href="dashboards-crm-analytics.html" class="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary outline-none transition-colors duration-200 hover:bg-primary/20 focus:bg-primary/20 active:bg-primary/25 dark:bg-navy-600 dark:text-accent-light dark:hover:bg-navy-450 dark:focus:bg-navy-450 dark:active:bg-navy-450/90" x-tooltip.placement.right="'Dashboards'">
-              <svg class="size-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <path fill="currentColor" fill-opacity=".3" d="M5 14.059c0-1.01 0-1.514.222-1.945.221-.43.632-.724 1.453-1.31l4.163-2.974c.56-.4.842-.601 1.162-.601.32 0 .601.2 1.162.601l4.163 2.974c.821.586 1.232.88 1.453 1.31.222.43.222.935.222 1.945V19c0 .943 0 1.414-.293 1.707C18.414 21 17.943 21 17 21H7c-.943 0-1.414 0-1.707-.293C5 20.414 5 19.943 5 19v-4.94Z" />
-                <path fill="currentColor" d="M3 12.387c0 .267 0 .4.084.441.084.041.19-.04.4-.204l7.288-5.669c.59-.459.885-.688 1.228-.688.343 0 .638.23 1.228.688l7.288 5.669c.21.163.316.245.4.204.084-.04.084-.174.084-.441v-.409c0-.48 0-.72-.102-.928-.101-.208-.291-.355-.67-.65l-7-5.445c-.59-.459-.885-.688-1.228-.688-.343 0-.638.23-1.228.688l-7 5.445c-.379.295-.569.442-.67.65-.102.208-.102.448-.102.928v.409Z" />
-                <path fill="currentColor" d="M11.5 15.5h1A1.5 1.5 0 0 1 14 17v3.5h-4V17a1.5 1.5 0 0 1 1.5-1.5Z" />
-                <path fill="currentColor" d="M17.5 5h-1a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5Z" />
-              </svg>
-            </a>
-            <!-- Apps -->
-            <a href="apps-list.html" class="flex size-11 items-center justify-center rounded-lg outline-none transition-colors duration-200 hover:bg-primary/20 focus:bg-primary/20 active:bg-primary/25 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25" x-tooltip.placement.right="'Applications'">
-              <svg class="size-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 8H19V16C19 17.8856 19 18.8284 18.4142 19.4142C17.8284 20 16.8856 20 15 20H9C7.11438 20 6.17157 20 5.58579 19.4142C5 18.8284 5 17.8856 5 16V8Z" fill="currentColor" fill-opacity="0.3" />
-                <path d="M12 8L11.7608 5.84709C11.6123 4.51089 10.4672 3.5 9.12282 3.5V3.5C7.68381 3.5 6.5 4.66655 6.5 6.10555V6.10555C6.5 6.97673 6.93539 7.79026 7.66025 8.2735L9.5 9.5" stroke="currentColor" stroke-linecap="round" />
-                <path d="M12 8L12.2392 5.84709C12.3877 4.51089 13.5328 3.5 14.8772 3.5V3.5C16.3162 3.5 17.5 4.66655 17.5 6.10555V6.10555C17.5 6.97673 17.0646 7.79026 16.3397 8.2735L14.5 9.5" stroke="currentColor" stroke-linecap="round" />
-                <rect x="4" y="8" width="16" height="3" rx="1" fill="currentColor" />
-                <path d="M12 11V15" stroke="currentColor" stroke-linecap="round" />
-              </svg>
-            </a>
-            <!-- Pages And Layouts -->
-            <a href="pages-card-user-1.html" class="flex size-11 items-center justify-center rounded-lg outline-none transition-colors duration-200 hover:bg-primary/20 focus:bg-primary/20 active:bg-primary/25 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25" x-tooltip.placement.right="'Pages & Layouts'">
-              <svg class="size-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.85714 3H4.14286C3.51167 3 3 3.51167 3 4.14286V9.85714C3 10.4883 3.51167 11 4.14286 11H9.85714C10.4883 11 11 10.4883 11 9.85714V4.14286C11 3.51167 10.4883 3 9.85714 3Z" fill="currentColor" />
-                <path d="M9.85714 12.8999H4.14286C3.51167 12.8999 3 13.4116 3 14.0428V19.757C3 20.3882 3.51167 20.8999 4.14286 20.8999H9.85714C10.4883 20.8999 11 20.3882 11 19.757V14.0428C11 13.4116 10.4883 12.8999 9.85714 12.8999Z" fill="currentColor" fill-opacity="0.3" />
-                <path d="M19.757 3H14.0428C13.4116 3 12.8999 3.51167 12.8999 4.14286V9.85714C12.8999 10.4883 13.4116 11 14.0428 11H19.757C20.3882 11 20.8999 10.4883 20.8999 9.85714V4.14286C20.8999 3.51167 20.3882 3 19.757 3Z" fill="currentColor" fill-opacity="0.3" />
-                <path d="M19.757 12.8999H14.0428C13.4116 12.8999 12.8999 13.4116 12.8999 14.0428V19.757C12.8999 20.3882 13.4116 20.8999 14.0428 20.8999H19.757C20.3882 20.8999 20.8999 20.3882 20.8999 19.757V14.0428C20.8999 13.4116 20.3882 12.8999 19.757 12.8999Z" fill="currentColor" fill-opacity="0.3" />
-              </svg>
-            </a>
-            <!-- Forms -->
-            <a href="form-input-text.html" class="flex size-11 items-center justify-center rounded-lg outline-none transition-colors duration-200 hover:bg-primary/20 focus:bg-primary/20 active:bg-primary/25 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25" x-tooltip.placement.right="'Forms'">
-              <svg class="size-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fill-opacity="0.25" d="M21.0001 16.05V18.75C21.0001 20.1 20.1001 21 18.7501 21H6.6001C6.9691 21 7.3471 20.946 7.6981 20.829C7.7971 20.793 7.89609 20.757 7.99509 20.712C8.31009 20.586 8.61611 20.406 8.88611 20.172C8.96711 20.109 9.05711 20.028 9.13811 19.947L9.17409 19.911L15.2941 13.8H18.7501C20.1001 13.8 21.0001 14.7 21.0001 16.05Z" fill="currentColor" />
-                <path fill-opacity="0.5" d="M17.7324 11.361L15.2934 13.8L9.17334 19.9111C9.80333 19.2631 10.1993 18.372 10.1993 17.4V8.70601L12.6384 6.26701C13.5924 5.31301 14.8704 5.31301 15.8244 6.26701L17.7324 8.17501C18.6864 9.12901 18.6864 10.407 17.7324 11.361Z" fill="currentColor" />
-                <path d="M7.95 3H5.25C3.9 3 3 3.9 3 5.25V17.4C3 17.643 3.02699 17.886 3.07199 18.12C3.09899 18.237 3.12599 18.354 3.16199 18.471C3.20699 18.606 3.252 18.741 3.306 18.867C3.315 18.876 3.31501 18.885 3.31501 18.885C3.32401 18.885 3.32401 18.885 3.31501 18.894C3.44101 19.146 3.585 19.389 3.756 19.614C3.855 19.731 3.95401 19.839 4.05301 19.947C4.15201 20.055 4.26 20.145 4.377 20.235L4.38601 20.244C4.61101 20.415 4.854 20.559 5.106 20.685C5.115 20.676 5.11501 20.676 5.11501 20.685C5.25001 20.748 5.385 20.793 5.529 20.838C5.646 20.874 5.76301 20.901 5.88001 20.928C6.11401 20.973 6.357 21 6.6 21C6.969 21 7.347 20.946 7.698 20.829C7.797 20.793 7.89599 20.757 7.99499 20.712C8.30999 20.586 8.61601 20.406 8.88601 20.172C8.96701 20.109 9.05701 20.028 9.13801 19.947L9.17399 19.911C9.80399 19.263 10.2 18.372 10.2 17.4V5.25C10.2 3.9 9.3 3 7.95 3ZM6.6 18.75C5.853 18.75 5.25 18.147 5.25 17.4C5.25 16.653 5.853 16.05 6.6 16.05C7.347 16.05 7.95 16.653 7.95 17.4C7.95 18.147 7.347 18.75 6.6 18.75Z" fill="currentColor" />
-              </svg>
-            </a>
-            <!-- Components -->
-            <a href="components-accordion.html" class="flex size-11 items-center justify-center rounded-lg outline-none transition-colors duration-200 hover:bg-primary/20 focus:bg-primary/20 active:bg-primary/25 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25" x-tooltip.placement.right="'Components'">
-              <svg class="size-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fill-opacity="0.5" d="M14.2498 16C14.2498 17.5487 13.576 18.9487 12.4998 19.9025C11.5723 20.7425 10.3473 21.25 8.99976 21.25C6.10351 21.25 3.74976 18.8962 3.74976 16C3.74976 13.585 5.39476 11.5375 7.61726 10.9337C8.22101 12.4562 9.51601 13.6287 11.1173 14.0662C11.5548 14.1887 12.0185 14.25 12.4998 14.25C12.981 14.25 13.4448 14.1887 13.8823 14.0662C14.1185 14.6612 14.2498 15.3175 14.2498 16Z" fill="currentColor" />
-                <path d="M17.75 9.00012C17.75 9.68262 17.6187 10.3389 17.3825 10.9339C16.7787 12.4564 15.4837 13.6289 13.8825 14.0664C13.445 14.1889 12.9813 14.2501 12.5 14.2501C12.0187 14.2501 11.555 14.1889 11.1175 14.0664C9.51625 13.6289 8.22125 12.4564 7.6175 10.9339C7.38125 10.3389 7.25 9.68262 7.25 9.00012C7.25 6.10387 9.60375 3.75012 12.5 3.75012C15.3962 3.75012 17.75 6.10387 17.75 9.00012Z" fill="currentColor" />
-                <path fill-opacity="0.3" d="M21.25 16C21.25 18.8962 18.8962 21.25 16 21.25C14.6525 21.25 13.4275 20.7425 12.5 19.9025C13.5763 18.9487 14.25 17.5487 14.25 16C14.25 15.3175 14.1187 14.6612 13.8825 14.0662C15.4837 13.6287 16.7787 12.4562 17.3825 10.9337C19.605 11.5375 21.25 13.585 21.25 16Z" fill="currentColor" />
-              </svg>
-            </a>
-            <!-- Elements -->
-            <a href="elements-avatar.html" class="flex size-11 items-center justify-center rounded-lg outline-none transition-colors duration-200 hover:bg-primary/20 focus:bg-primary/20 active:bg-primary/25 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25" x-tooltip.placement.right="'Elements'">
-              <svg class="size-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.3111 14.75H5.03356C3.36523 14.75 2.30189 12.9625 3.10856 11.4958L5.24439 7.60911L7.24273 3.96995C8.07689 2.45745 10.2586 2.45745 11.0927 3.96995L13.1002 7.60911L14.0627 9.35995L15.2361 11.4958C16.0427 12.9625 14.9794 14.75 13.3111 14.75Z" fill="currentColor" />
-                <path fill-opacity="0.3" d="M21.1667 15.2083C21.1667 18.4992 18.4992 21.1667 15.2083 21.1667C11.9175 21.1667 9.25 18.4992 9.25 15.2083C9.25 15.0525 9.25917 14.9058 9.26833 14.75H13.3108C14.9792 14.75 16.0425 12.9625 15.2358 11.4958L14.0625 9.36C14.4292 9.28666 14.8142 9.25 15.2083 9.25C18.4992 9.25 21.1667 11.9175 21.1667 15.2083Z" fill="currentColor" />
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sidebar Panel -->
-      <div class="sidebar-panel">
-        <div class="flex h-full grow flex-col bg-white pl-[var(--main-sidebar-width)] dark:bg-navy-750">
-          <!-- Sidebar Panel Header -->
-          <div class="flex h-18 w-full items-center justify-between pl-4 pr-1">
-            <p class="text-base tracking-wider text-slate-800 dark:text-navy-100">
-              Dashboards
-            </p>
-            <button @click="$store.global.isSidebarExpanded = false" class="btn size-7 rounded-full p-0 text-primary hover:bg-slate-300/20 focus:bg-slate-300/20 active:bg-slate-300/25 dark:text-accent-light/80 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25 xl:hidden">
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- Sidebar Panel Body -->
-
-        </div>
-      </div>
-    </div>
-
-    <!-- App Header Wrapper-->
-    <nav class="header before:bg-white dark:before:bg-navy-750 print:hidden">
-      <!-- App Header  -->
-      <div class="header-container relative flex w-full bg-white dark:bg-navy-750 print:hidden">
-        <!-- Header Items -->
-        <div class="flex w-full items-center justify-between">
-          <!-- Left: Sidebar Toggle Button -->
-          <div class="size-7">
-            <button class="menu-toggle ml-0.5 flex size-7 flex-col justify-center space-y-1.5 text-primary outline-none focus:outline-none dark:text-accent-light/80" :class="$store.global.isSidebarExpanded && 'active'" @click="$store.global.isSidebarExpanded = !$store.global.isSidebarExpanded">
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-          </div>
-
-          <!-- Right: Header buttons -->
-          <div class="-mr-1.5 flex items-center space-x-2">
-            <!-- Mobile Search Toggle -->
-            <button @click="$store.global.isSearchbarActive = !$store.global.isSearchbarActive" class="btn size-8 rounded-full p-0 hover:bg-slate-300/20 focus:bg-slate-300/20 active:bg-slate-300/25 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25 sm:hidden">
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-5.5 text-slate-500 dark:text-navy-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-
-            <!-- Main Searchbar -->
-            <!-- Dark Mode Toggle -->
-            <button @click="$store.global.isDarkModeEnabled = !$store.global.isDarkModeEnabled" class="btn size-8 rounded-full p-0 hover:bg-slate-300/20 focus:bg-slate-300/20 active:bg-slate-300/25 dark:hover:bg-navy-300/20 dark:focus:bg-navy-300/20 dark:active:bg-navy-300/25">
-              <svg x-show="$store.global.isDarkModeEnabled" x-transition:enter="transition-transform duration-200 ease-out absolute origin-top" x-transition:enter-start="scale-75" x-transition:enter-end="scale-100 static" class="size-6 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M11.75 3.412a.818.818 0 01-.07.917 6.332 6.332 0 00-1.4 3.971c0 3.564 2.98 6.494 6.706 6.494a6.86 6.86 0 002.856-.617.818.818 0 011.1 1.047C19.593 18.614 16.218 21 12.283 21 7.18 21 3 16.973 3 11.956c0-4.563 3.46-8.31 7.925-8.948a.818.818 0 01.826.404z" />
-              </svg>
-              <svg xmlns="http://www.w3.org/2000/svg" x-show="!$store.global.isDarkModeEnabled" x-transition:enter="transition-transform duration-200 ease-out absolute origin-top" x-transition:enter-start="scale-75" x-transition:enter-end="scale-100 static" class="size-6 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-    <!-- Right Sidebar -->
-
-
+<?php
+include 'navbar.php';
+?>
     <!-- Main Content Wrapper -->
     <main class="main-content w-full px-[var(--margin-x)] pb-8">
 
-      <style>
-        /* Customize buttons */
-        .btn {
-          /* Your button styles here */
-        }
+    <form action="index.php" method="post">
+                    <table id="t_style" class="table-striped table-bordered" width="100%">
+                        <tr style="font-weight:bold">
+                            <td colspan='8'>
+                                Customer Name
+                                <input style='width:80%' type="text" required name="name" list='name_list' value="<?php echo $name ?>" <?php echo $focus1 ?> />
+                                <input type='submit' style="padding: 10px;background-color: darkblue;color: white;border-radius: 10%;" name='check' value="Check" />
+                            </td>
 
-        /* Target specific buttons */
-        .btn-info {
-          /* Your styles for info buttons */
-        }
+                            <datalist id='name_list'>
+                                <?php
+                                $sql = "SELECT distinct name FROM sales GROUP BY name";
+                                $sql_run = mysqli_query($db, $sql);
+                                $count = mysqli_num_rows($sql_run);
+                                for ($i = 1; $i <= $count; $i++) {
+                                    $row = mysqli_fetch_array($sql_run);
+                                    $name = $row['name'];
+                                    echo "<option>$name</option>";
+                                }
+                                ?>
+                            </datalist>
+                            </td>
+                        </tr>
 
-        /* Override table styles */
-        .table {
-          /* Your table styles here */
-        }
+                        <tr style="font-weight:bold">
+                            <td>Area: </td>
+                            <td><input required style='width:85%' type="text" name="area" value="<?php echo $area ?>" list='area_list' />
+                                <datalist id='area_list'>
+                                    <?php
+                                    $sql = mysqli_query($db, "SELECT distinct area FROM sales");
+                                    $sql_count = mysqli_num_rows($sql);
+                                    for ($v = 1; $v <= $sql_count; $v++) {
+                                        $row = mysqli_fetch_array($sql);
+                                        $area = $row['area'];
+                                        echo "<option>$area</option>";
+                                    }
+                                    ?>
+                                </datalist>
 
-        /* Target specific table elements */
-        .table th {
-          /* Styles for table headers */
-        }
 
-        .table td {
-          /* Styles for table cells */
-        }
+                            </td>
+                            <td>Address: </td>
+                            <td><input required style='width:85%' type="text" name="address" value="<?php echo $address ?>" list='address_list' />
+                                <datalist id='address_list'>
+                                    <?php
+                                    $sql = mysqli_query($db, "SELECT distinct address FROM sales");
+                                    $sql_count = mysqli_num_rows($sql);
+                                    for ($v = 1; $v <= $sql_count; $v++) {
+                                        $row = mysqli_fetch_array($sql);
+                                        $address = $row['address'];
+                                        echo "<option>$address</option>";
+                                    }
+                                    ?>
+                                </datalist>
 
-        /* Customize modal */
-        .modal-content {
-          /* Your modal styles here */
-        }
+                            </td>
+                            <td>Pan no. / Adhar no.: </td>
+                            <td> <input type="text" name="pan" id='pan' style="width: 72.8%" value="<?php echo $pan ?>" </td>
+                            <td>Mobile No: </td>
+                            <td> <input required style='width:100%' type="text" name="mobile1" value="<?php echo $mobile ?>" />
+                        </tr>
+                    </table>
 
-        /* Target modal header */
-        .modal-header {
-          /* Styles for modal header */
-        }
+                    <br />
 
-        /* Target modal body */
-        .modal-body {
-          /* Styles for modal body */
-        }
+                    <table id="t_style" class="table-striped table-bordered" width="100%">
+                        <tr>
+                            <td colspan='3' align="left" style="font-weight:bold">
+                                Date <input type='date' name='date' value='<?php echo $date ?>' />
+                            </td>
+                            <td colspan='10' align="right" style="font-weight:bold">
+                                B.No <?php echo $bill ?></td>
+                        </tr>
+                        <tr style="background-color:#F7FEDE; font-weight:bold">
+                            <td>#</td>
+                            <td width='11%'>Product Name </td>
+                            <td width="7%">Type</td>
+                            <td width="7%">Hsn Code</td>
+                            <td>N.Wt<br>(Grams)</td>
+                            <td>Stn.Wt</td>
+                            <td>St.Rate</td>
+                            <td align='center' width='5%'>G.Rate</td>
+                            <td align='center' width='1%'>Lbr/Gm</td>
+                            <td align='center' width='1%'>Amount<br>(Rs.)</td>
+                            <td align='center'>+Tax%</td>
+                            <td align='right' width="4%">After Tax </td>
+                            <td align='right'>Add / Del</td>
+                        </tr>
 
-        /* Target modal footer */
-        .modal-footer {
-          /* Styles for modal footer */
-        }
-      </style>
-      <section class="main">
-        <div class="row" style="margin-top: 50px;">
-          <div class="col-lg-4 col-lg-offset-6"></div>
-        </div>
-        <div class="container">
-          <div class="row">
-            <div class="col-md-3">
-              <a href="./add-product.php" class="btn btn-info" style="width: 100%;">Add New Product</a>
-            </div>
-            <div class="col-md-3">
-              <a href="./purchase_history.php" class="btn btn-info" style="width: 100%;">Purchased History</a>
-            </div>
-          </div>
-        </div>
-        <div class="container" style="margin-top: 20px;">
-          <div class="row">
-            <table id="productTable" class="table table-bordered">
-              <thead>
-                <tr>
-                  <th>Product Id</th>
-                  <th>Product Name</th>
-                  <th>Type</th>
-                  <th>Carat</th>
-                  <th>Net Weight</th>
-                  <th>Action</th>
+                        <?php
+                        $tweight = 0;
+                        $total_amt = 0;
+                        $gstper = '';
+                        $discount = 0;
+                        $dis_amt = 0;
+                        $discount_final =  0;
+                        $previous_amt = 0;
+
+                        $sql = "SELECT * FROM sales WHERE bill_no = '$bill' and description!='Payment'";
+                        $sql_run = mysqli_query($db, $sql);
+                        $count = mysqli_num_rows($sql_run);
+                        $i = 0;
+                        $main_total = 0;
+                        if ($count > 0) {
+                            while ($i < $count) {
+                                $i++;
+                                $row = mysqli_fetch_array($sql_run);
+                                $id = $row['id'];
+                                $description = $row['description'];
+                                $amount = $row['amount'];
+                                $total_amt = $total_amt + $row['amount'];
+                                $weight = $row['weight'];
+                                $tweight = $tweight + $weight;
+                                $rate = $row['rate'];
+                                $hsn = $row['hsn'];
+                                $purity1 = $row['purity'];
+                                $lbr1 = $row['lbr'];
+                                $type = $row['type'];
+                                $gstper = $row['gst'];
+                                $amt = $row['amt'];
+                                $discount = $row['discount'];
+                                $dis_amt = $row['dis_amt'];
+                                $dweight = $row['dweight'];
+                                $drate = $row['drate'];
+                                $sweight = $row['sweight'];
+                                $srate = $row['srate'];
+                                $gwt = $row['gwt'];
+                                $discount_final = $row['discount_final'];
+                                $balance_amount = $total_amt - $orn;
+                                if ($discount_final == 0) {
+                                    $discount_final = $balance_amount - $paid;
+                                }
+                                $advance = $row['advance'];
+                                $g_total = $discount_final;
+
+                                echo
+                                "<tr>
+			<td>$i</td>
+			<td>$description</td>
+			<td>$type</td>
+			<td>$hsn</td>
+			<td align='center'>$weight</td>
+			<td align='center'>$sweight</td>
+			<td align='center'>$srate</td>
+			<td align='center'>$rate</td>
+			<td align='center'>$lbr1</td>
+			<td align='center'>$amt</td>
+			<td align='center'>$gstper</td>
+			<td align='right'>$amount</td>
+		
+			<td align='right'>
+			<form action='index.php?bill=$bill' method='post'>
+				<input type='hidden' name='del' value='$id' />
+				<input type='hidden' name='mobile' value='$mobile'/>
+				<input type='submit' name='delete' value='del'/>
+			</form>
+			</td>
+			</tr>
+			";
+                            }
+                            // CALCULATION PREVIOUS AMOUNT -----------------------------------
+
+                            $sql_pr = mysqli_query($db, "SELECT  balance_amount ,paid FROM sales where name ='$party' and bill_no<'$bill' and description!='Payment' GROUP BY bill_no");
+
+                            $sqlrow_pr_count = mysqli_num_rows($sql_pr);
+                            while ($sqlrow_pr_count != 0) {
+
+                                $sqlrow_pr = mysqli_fetch_array($sql_pr);
+                                $previous_amt += $sqlrow_pr['balance_amount'] - $sqlrow_pr['paid'];
+                                $sqlrow_pr_count--;
+                            }
+                            $sql_pr2 = mysqli_query($db, "SELECT  sum(paid) as paids  FROM sales where name ='$party' and bill_no<'$bill' and description='Payment' GROUP BY name");
+                            if ($sql_pr2->num_rows > 0) {
+                                $sqlrow_pr2 = mysqli_fetch_array($sql_pr2);
+                                $previous_amt -= $sqlrow_pr2['paids'];
+                            }
+
+                            $g_total += $previous_amt;
+
+                            // END ------------------------------------------------------------
+                        }
+
+                        ?>
+
+                        <tr>
+                            <td> </td>
+
+                            <td>
+                                <select name="description" id="description" style="width: 100%;padding: 3px;">
+                                    <option value="" disabled selected>-- SELECT --</option>
+                                    <?php
+                                    foreach ($products as $productData) {
+                                        echo '<option>' . $productData['name'] . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </td>
+
+                            <td>
+                                <input type='text' id='type' name='type' onblur="typer()" style="width:100%;" list='type_list' onkeypress="return noenter()">
+                                <datalist id='type_list'>
+                                    <option>gold</option>
+                                    <option>silver</option>
+                                    <option value='goldc'>gold coin</option>
+                                    <option value='silverc'>silver coin</option>
+                                    <option value="diamondjw">diamond jewellery</option>
+                                    <option value="otherstone">other stone</option>
+                                    <option>stone</option>
+                                    <option>platinum</option>
+                                    <option>diamond</option>
+                                    <option>neelam</option>
+                                    <option>pukhraj</option>
+                                    <option>panna</option>
+                                    <option>manik</option>
+                                    <option>moonga</option>
+                                </datalist>
+                            </td>
+
+
+                            <td><input type="text" name="hsn" style='width:100%;text-align:center' id="hsn" onkeypress="return noenter()"></td>
+
+                            <td><input type="text" name="weight" style='width:100%;text-align:center' id="weight" onkeypress="return noenter()"></td>
+
+
+                            <td><input type="text" name="sweight" style='width:100%;text-align:center' id="sweight" onkeypress="return noenter()"></td>
+
+                            <td><input type="text" name="srate" style='width:100%;text-align:center' id="srate" onkeypress="return noenter()"></td>
+
+
+                            <td><input type="text" name="rate" style='width:100%;text-align:center' id="rate" onkeypress="return noenter()"></td>
+
+                            <td><input type="text" name="lbr" style='width:100%;text-align:center' id="lbr" onkeypress="return noenter()" onblur="amount_sum()"></td>
+
+
+                            <td><input type="text" name="amt" style='width:100%;text-align:center' id="amt" onfocus="amount_sum()" onkeypress="return noenter()"></td>
+
+
+                            <td><input type="text" name="gstper" style='width:100%;text-align:center' id="gstper" onkeypress="return noenter()" onblur="amount_sum()"></td>
+
+
+                            <td><input type="text" name="amount" style='width:50px;text-align:center' id="amount" onkeypress="return noenter()"></td>
+
+                            <input type='hidden' name='purchase_date' id='purchase_date' value='<?php echo $purchase_date ?>' onkeypress="return noenter()" />
+                            <td align="right"> <input type="submit" style="padding: 10px;border-radius: 6%;border: 1px solid darkblue;background-color: darkblue;color: white;" name="add" value="add" /></td>
+                        </tr>
+                        <tr>
+                            <td rowspan="9"></td>
+                            <td colspan="5">&nbsp;</td>
+                        </tr>
+
+
+                        <tr>
+                            <td colspan='6'> </td>
+                            <td colspan="4"><strong>TOTAL AMOUNT WITH GST</strong></td>
+                            <td align='right'><input type='text' name='total' style='width:100%;text-align:center' value='<?php echo $total_amt ?>' id='total' />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan='6'> </td>
+                            <td colspan="4"><strong>ORNAMENTS RETURN</strong></td>
+                            <td align='right'><input type='text' name='orn' style='width:100%;text-align:center' value='<?php echo $orn ?>' id='orn' onkeyup='orn_balance()' />
+                            </td>
+                        </tr>
+                        <tr style="display: none;" class="return_description">
+                            <td colspan='6'> </td>
+                            <td colspan="3"><strong>RETURN DESCRIPTION</strong></td>
+                            <td align='right' colspan="2"><input type='text' name='orn_description' style='width:100%;text-align:center' value='<?php echo $orn_description ?>' id='orn' />
+                            </td>
+                        </tr>
+
+
+                        <tr>
+                            <td colspan='6'> </td>
+                            <td colspan="4"><strong>BILL AMOUNT</strong></td>
+                            <td align='right'><input type='text' name='balance_amount' style='width:100%;text-align:center' value='<?php echo $balance_amount ?>' id='balance_amount' onfocus='orn_balance()' />
+                            </td>
+                        </tr>
+
+                        <tr style="">
+                            <td colspan='6'></td>
+                            <td colspan="4"><strong>AMOUNT PAID BY CUSTOMER</strong></td>
+                            <td><input type='text' name='paid' id="paid" style="width: 100%; text-align: center;" value='<?php echo $paid ?>' onkeyup="dis1()" /></td>
+                        </tr>
+
+                        <tr>
+                            <td colspan='6'> </td>
+                            <td colspan="4"><strong>DISCOUNT</strong></td>
+                            <td align='right'><input type='text' name='discount' style='width:100%;text-align:center' value='<?php echo $discount ?>' id='discount_ro' onkeyup="dis1()" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan='6'> </td>
+                            <td colspan="4"><strong>BALANCE AMOUNT</strong></td>
+                            <td align='right'><input type='text' name='discount_final' style='width:100%;text-align:center' value='<?php echo $discount_final ?>' id='discount_final' />
+                            </td>
+                        </tr>
+
+                        <tr style="display:none">
+                            <td colspan="4"><strong>FINAL AMOUNT : </strong></td>
+                            <td width="5%"><input type='text' name='balance' id="balance" style="width: 100%; text-align: center;" value='<?php echo $balance ?>' /></td>
+                        </tr>
+                        <tr>
+                            <td colspan='6'> </td>
+                            <td colspan="4"><strong>PREVIOUS AMOUNT</strong></td>
+                            <td align='right'><input type='text' name='previous_amt' style='width:100%;text-align:center' value='<?php echo $previous_amt ?>' id='previous_amt' />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="6"></td>
+                            <td colspan="4"><strong>GRAND TOTAL : </strong></td>
+                            <td> <input type='text' name='g_total' style='width:100%;text-align:center' value='<?php echo $g_total ?>' id='g_total' />
+                            </td>
+                        </tr>
+
+                        <tr style="font-weight:bold">
+                            <td align="center" colspan="2"><strong>REMARK:</strong></td>
+                            <td colspan="2">
+                                <input type="text" name="remark" id="remark" style="width: 100%" value="<?php echo $remark ?>" list='product_list'>
+                                <datalist id='product_list'>
+                                    <?php
+                                    $sql = mysqli_query($db, "SELECT remark FROM sales group by remark limit 500");
+                                    $sql_count = mysqli_num_rows($sql);
+                                    for ($v = 1; $v <= $sql_count; $v++) {
+                                        $row = mysqli_fetch_array($sql);
+                                        $remark = $row['remark'];
+                                        echo "<option>$remark</option>";
+                                    }
+                                    ?>
+                                </datalist>
+
+                            </td>
+                            <td align="center">GST TYPE :</td>
+                            <td>
+                                <select name='sgst' class="form-control">
+                                    <option>GST</option>
+                                </select>
+                            </td>
+                            <td style="background-color:lightblue" align="center">For</td>
+                            <td colspan='4'>
+                                <select name='firmname' style="background-color:#cfecec" class='form-control'>
+                                    <?php
+                                    $sql = mysqli_query($db, "SELECT * FROM firm");
+                                    $sql_count = mysqli_num_rows($sql);
+                                    for ($t = 1; $t <= $sql_count; $t++) {
+                                        $rw = mysqli_fetch_array($sql);
+                                        $name = $rw['name'];
+                                        echo "<option>$name</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </td>
+                            <td align="right">
+                                <input type="hidden" name="bill" value="<?php echo $bill ?>" />
+                                <input type="submit" style="padding: 10px;background-color: darkblue;color: white; border-radius: 10%;" name="finish" value="Finish" id='finish' />
+                </form>
+                </td>
                 </tr>
-              </thead>
-              <tbody>
-                <?php
-                // Fetch products from the database
-                $sql = "SELECT * FROM stock";
-                $result = $db->query($sql);
+                </table>
 
-                if ($result->num_rows > 0) {
-                  // Output data of each row
-                  $i = 1;
-                  while ($row = $result->fetch_assoc()) {
-                    echo "<tr>";
-                    echo "<td>" . $i++ . "</td>";
-                    echo "<td>" . $row["name"] . "</td>";
-                    echo "<td>" . $row["type"] . "</td>";
-                    echo "<td>" . $row["carat"] . "</td>";
-                    echo "<td>" . $row["weight"] . "gm</td>";
-                    echo "<td><a class='btn btn-success' href='edit-product.php?product_id=" . $row["id"] . "'>Edit</a>&nbsp;";
-                    echo "<a class='btn btn-warning add-purchase-btn' href='#' data-product-id='" . $row['id'] . "'>Add Purchase</a>";
-                    echo "<a href='delete-product.php?product_id=" . $row["id"] . "' class='btn btn-danger'>Delete</a></td>";
-                    echo "</tr>";
-                  }
-                }
-                ?>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="addPurchaseModal" class="modal fade" role="dialog">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <form action="submitPurchase.php" method="post">
-                <!-- Modal Header -->
-                <div class="modal-header">
-                  <button type="button" class="close" data-dismiss="modal">&times;</button>
-                  <h4 class="modal-title">Add Purchase</h4>
-                </div>
-                <!-- Modal Body -->
-                <div class="modal-body">
-                  <div class="form-group">
-                    <label>Weight (in GM.):</label>
-                    <input type="number" name="weight" class="form-control" placeholder="Enter purchased weight in grams.">
-                  </div>
-                  <div class="form-group">
-                    <label>Cost:</label>
-                    <input type="text" name="cost" class="form-control" placeholder="Enter purchased cost">
-                  </div>
-                </div>
-                <!-- Modal Footer -->
-                <div class="modal-footer">
-                  <input type="hidden" name="product_id" value="" id="prod_id">
-                  <button type="submit" class="btn btn-success">Submit</button>
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                </div>
-              </form>
             </div>
-          </div>
         </div>
-      </section>
+    </div>
+
+    <?php
+    if (isset($_POST['add'])) {
+        $bill = $_POST['bill'];
+        $date = $_POST['date'];
+        $type = $_POST['type'];
+        //description  details//
+        $description = $_POST['description'];
+        $discount = $_POST['discount'];
+        $dis_amt = $_POST['dis_amt'];
+
+        //customer details //
+        $name = trim($_POST['name']);
+        $address = $_POST['address'];
+        $area = $_POST['area'];
+        $mobile = $_POST['mobile1'];
+        $pan = $_POST['pan'];
+        //size
+        $weight = $_POST['weight'];
+        $rate = $_POST['rate'];
+        $purity = $_POST['purity'];
+        $hsn = $_POST['hsn'];
+        $lbr = $_POST['lbr'];
+        $amount = $_POST['amount'];
+        $gstper = $_POST['gstper'];
+        $amt = $_POST['amt'];
+        $remark = $_POST['remark'];
+        $dweight = $_POST['dweight'];
+        $drate = $_POST['drate'];
+        $sweight = $_POST['sweight'];
+        $srate = $_POST['srate'];
+        $gwt = $_POST['gwt'];
+
+        $purchase_date = $_POST['purchase_date'];
+        $orn_description = $_POST['orn_description'];
+
+        $firmname = $_POST['firmname'];
+
+        $sql = mysqli_query($db, "INSERT INTO sales (bill_no, name, address, date, description, mobile,weight,rate,purity,hsn,lbr,amount,type,gst,amt,discount,dis_amt,pan,remark,purchase_date,dweight,drate,sweight,srate,gwt,orn_description,area) 
+	VALUES 
+	('$bill', '$name', '$address', '$date', '$description',  '$mobile', '$weight','$rate','$purity','$hsn','$lbr','$amount','$type','$gstper','$amt','$discount','$dis_amt','$pan','$remark','$purchase_date','$dweight','$drate','$sweight','$srate','$gwt','$orn_description','$area')") or
+            die(mysqli_error($db));;
+
+        $sql = mysqli_query($db, "INSERT IGNORE INTO product SET name = '$description'");
+        header("location:index.php?bill=$bill");
+    }
+    ?>
+
+    <?php
+    if (isset($_POST['finish'])) {
+        $bill = $_POST['bill'];
+        $mobile = $_POST['mobile1'];
+        $name = trim($_POST['name']);
+        $address = $_POST['address'];
+        $area = $_POST['area'];
+        $pan = $_POST['pan'];
+        $paid = $_POST['paid'];
+        $final = $_POST['final'];
+        $balance = $_POST['balance'];
+        $remark = $_POST['remark'];
+        $date = $_POST['date'];
+        $orn = $_POST['orn'];
+        $balance_amount = $_POST['balance_amount'];
+        $discount_final = $_POST['discount_final'];
+        $tt = $_POST['total'];
+        $firmname = $_POST['firmname'];
+        $discount = $_POST['discount'];
+        $orn_description = $_POST['orn_description'];
+
+        $sql = "UPDATE sales SET 
+		mobile = '$mobile', 
+		date = '$date',
+		name = '$name', 
+		address = '$address',
+		area='$area',
+		total_amt='$tt',
+		final='$final',
+		balance='$balance',
+		pan='$pan',
+		remark='$remark',
+		orn = '$orn',
+		discount='$discount',
+		balance_amount = '$balance_amount',
+		discount_final = '$discount_final',
+		firmname = '$firmname',
+		paid = '$paid',
+		bp_remark = 'normal',
+		orn_description='$orn_description'
+		WHERE bill_no = '$bill' and description!='Payment'";
+
+        if ($sql_run = mysqli_query($db, $sql)) {
+            $sql2 = mysqli_query($db, "INSERT ignore INTO address set name = '$address' ");
+            header("location:print.php?bill=$bill&mobile=$mobile");
+        } else {
+            echo mysqli_error($db);
+        }
+    }
+    ?>
+
+    <?php
+    if (isset($_POST['delete'])) {
+        $mobile = $_POST['mobile'];
+        $del = $_POST['del'];
+
+        //THEN DELETE FROM sales
+        $sql = "DELETE FROM sales WHERE id = '$del'";
+        $sql_run = mysqli_query($db, $sql);
+        header("location:index.php?bill=$bill");
+    }
+    ?>
+</body>
+
+<script type="text/javascript">
+    var total = document.getElementById('total').value;
+    var paid = document.getElementById('paid').value;
+    var balance = document.getElementById('balance');
+    if (paid == "") {
+        var total = document.getElementById('total').value;
+        balance.value = total
+    }
+
+    function dis() {
+
+        var total = document.getElementById('total').value;
+        var discount = document.getElementById("discount").value;
+        var final = document.getElementById('final');
+        var balance = document.getElementById('balance');
+        final.value = (total - discount);
+        balance.value = (total - discount);
+    }
+
+    function diss() {
+        var tweight = document.getElementById("tweight").value;
+        var disper = document.getElementById("disper").value;
+        var discount = document.getElementById("discount");
+        discount.value = tweight * disper;
+    }
+
+    function amount_sum() {
+        var stwt, strate, lbr, amount, gstper, diawt, diarate, gwt, grate, nwt, dis_amt, discount;
+        amount = document.getElementById("amount");
+        weight = document.getElementById("weight").value;
+        rate = document.getElementById("rate").value;
+        lbr = document.getElementById("lbr").value;
+        gstper = document.getElementById("gstper").value;
+        dis_amt = document.getElementById("dis_amt");
+        var amt1 = document.getElementById("amt");
+        var type = document.getElementById("type").value;
+        var sweight = document.getElementById('sweight').value;
+        var srate = document.getElementById('srate').value;
+        var mix = +rate + +lbr;
+        var amt = mix * weight + (sweight * srate);
+
+        if (type == 'gold' || type == 'silver') {
+            var diss = discount * weight;
+        } else {
+            var diss = discount;
+        }
+        var amt_dis = amt;
+
+        amt1.value = amt;
+        var gstamount = (amt_dis / 100) * gstper;
+        amount.value = Math.round(amt_dis + gstamount);
+    }
+</script>
+<script type="text/javascript">
+    function dis1() {
+
+        var balance_amount = document.getElementById('balance_amount').value;
+        var paid = document.getElementById('paid').value;
+        var balance = document.getElementById('balance');
+        var discount = document.getElementById('discount_ro').value;
+        var discount_final = document.getElementById('discount_final');
+        discount_final.value = Math.round((balance_amount - paid) - discount);
+        balance.value = paid;
+
+        var previous_amt = document.getElementById('previous_amt').value;
+
+        $('#g_total').val(Math.round((balance_amount - paid) + +previous_amt) - discount);
+    }
+
+    function orn_balance() {
+
+        var orn = document.getElementById('orn').value;
+        // var discount = document.getElementById('discount').value;
+        var total = document.getElementById('total').value;
+        var balance_amount = document.getElementById('balance_amount');
+        balance_amount.value = Math.round(total - orn);
+        var paid = document.getElementById('paid').value;
+        var balance_amount2 = document.getElementById('balance_amount').value;
+
+        var previous_amt = document.getElementById('previous_amt').value;
+        $('#g_total').val(balance_amount2 - paid + +previous_amt);
+
+        dis1();
+        //	paid.value = balance_amount.value;
+    }
+</script>
+<script type='text/javascript'>
+    //AJAX REQUEST WITHOUT PAGE RELOAD // REQUEST FROM DOM2.PHP
+    function zap() {
+        var code = document.getElementById("code").value;
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            const serverResponse = document.getElementById("variables");
+            serverResponse.innerHTML = this.responseText;
+
+            //DESCRIPTION
+            var pp = document.getElementById('pp').value;
+            var dd = document.getElementById('description');
+            dd.value = pp;
+
+            //TYPE
+            var pp2 = document.getElementById('pp2').value;
+            var type = document.getElementById('type');
+            type.value = pp2;
+
+            //WEIGHT
+            var pp3 = document.getElementById('pp3').value;
+            var weight = document.getElementById('weight');
+            weight.value = pp3;
+
+            //PURITY
+            var pp4 = document.getElementById('pp4').value;
+            var purity = document.getElementById('purity');
+            purity.value = pp4;
+
+            //HSN
+            var pp5 = document.getElementById('pp5').value;
+            var hsn = document.getElementById('hsn');
+            hsn.value = pp5;
+
+            //PURCHASE DATE
+            var pp6 = document.getElementById('pp6').value;
+            var purchase_date = document.getElementById('purchase_date');
+            purchase_date.value = pp6;
+            var rate = document.getElementById('rate').focus();
+
+            typer();
+
+
+        }
+        xhr.open("POST", "dom2.php");
+        xhr.setRequestHeader("Content-Type", "application/x-www-Form-urlencoded");
+        xhr.send("code=" + code);
+    }
+
+    chkorn();
+    $('#orn').keyup(function() {
+        chkorn();
+    });
+
+    function chkorn() {
+        ($('#orn').val() > 0) ? $('.return_description').css('display', ""): $('.return_description').css('display', "none");
+    }
+
+    $('#description').change(function() {
+        var id = $(this).val();
+
+        $.ajax({
+            url: "stock.php",
+            type: "post",
+            data: {
+                id: id,
+                getDetails: 1
+            },
+            success: function(resp) {
+                resp = JSON.parse(resp);
+
+                $('#type').val(resp.type);
+                $('#weight').val(resp.weight);
+                $('#sweight').val(resp.stn_weight);
+                $('#srate').val(resp.stn_rate);
+                $('#rate').val(resp.price);
+
+                // $('#qtyAvailable').val(resp.qty);
+            }
+        });
+    });
+</script>
 
   
     </main>
@@ -323,21 +789,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['getDetails'])) {
         @see https://alpinejs.dev/directives/teleport
       -->
   <div id="x-teleport-target"></div>
-  <script>
-        $(document).ready(function() {
-          $('#productTable').DataTable();
-
-          $('.add-purchase-btn').click(function() {
-            var productId = $(this).data('product-id');
-            $('#prod_id').val(productId);
-            $('#addPurchaseModal').modal('show')
-          });
-        });
-      </script>
-  <script>
-    window.addEventListener("DOMContentLoaded", () => Alpine.start());
-  </script>
-  <script src="bootstrap-5/js/bootstrap.bundle.min.js"></script>
+   <script type="text/javascript">
+        function noenter() {
+            return !(window.event && window.event.keyCode == 13);
+        }
+    </script>
 </body>
 
 </html>
