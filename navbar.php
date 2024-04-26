@@ -79,6 +79,45 @@
             .submenu li {
               float: none;
             }
+        ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        li {
+            float: left;
+        }
+
+        li a {
+            display: block;
+            color: darkblue;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        li a:hover {
+            background-color: #d9d9dd3b;
+            color: darkblue;
+            border-radius: 5%;
+        }
+
+        /* Submenu Styles */
+        .submenu {
+            display: none;
+            position: relative;
+            background-color: #f3f3f3;
+        }
+
+        .submenu.active {
+            display: block;
+        }
+
+        .submenu li {
+            float: none;
+        }
           </style>
           <div class="is-scrollbar-hidden flex grow flex-col space-y-4 overflow-y-auto pt-6" style="padding-top: 7.5rem !important;">
             <!-- Sales(Gst) -->
@@ -156,6 +195,23 @@
       </div>
     </nav>
     <!-- Right Sidebar -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Get all the parent list items
+        var parentItems = document.querySelectorAll('ul > li');
+
+        // Loop through each parent item and attach a click event listener
+        parentItems.forEach(function(item) {
+            item.addEventListener('click', function() {
+                // Toggle the active class on the submenu of the clicked parent item
+                var submenu = this.querySelector('.submenu');
+                if (submenu) {
+                    submenu.classList.toggle('active');
+                }
+            });
+        });
+    });
+</script>
     <script>
       window.addEventListener("DOMContentLoaded", () => Alpine.start());
     </script>
